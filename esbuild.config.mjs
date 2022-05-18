@@ -16,6 +16,7 @@ esbuild
 			js: banner,
 		},
 		entryPoints: ["main.ts"],
+		outfile: "main.js",
 		bundle: true,
 		external: [
 			"obsidian",
@@ -49,6 +50,5 @@ esbuild
 		logLevel: "info",
 		sourcemap: prod ? false : "inline",
 		treeShaking: true,
-		outdir: "./build",
 	})
 	.catch(() => process.exit(1));
