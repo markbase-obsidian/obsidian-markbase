@@ -41,14 +41,25 @@ class Api {
 		slug: string,
 		name: string,
 		folderToShare: string,
-		projectPublic: boolean
+		zipFile: Buffer
 	) => {
 		return this.client.post("/projects/user", {
 			slug,
 			name,
 			folderToShare,
-			public: projectPublic,
+			file: zipFile,
 		});
+	};
+
+	syncProjectForUser = (slug: string, zipFile: Buffer) => {
+		return this.client.post("/projects/user/sync", {
+			slug,
+			file: zipFile,
+		});
+	};
+
+	deleteProjectById = (projectId: string) => {
+		return this.client.delete("/projects/id/" + projectId);
 	};
 }
 

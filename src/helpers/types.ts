@@ -1,5 +1,5 @@
 export interface Project {
-	id: number;
+	id: string;
 	slug: string;
 	name: string;
 	folderToShare: string;
@@ -11,7 +11,7 @@ export interface Project {
 }
 
 export interface User {
-	id: number;
+	id: string;
 	firebaseUid?: string;
 	obsidianUserToken?: string;
 	projects: Project[];
@@ -19,7 +19,7 @@ export interface User {
 }
 
 export interface Metadata {
-	id: number;
+	id: string;
 	createdAt: Date;
 	updatedAt: Date;
 }

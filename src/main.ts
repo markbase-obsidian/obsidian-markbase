@@ -1,7 +1,16 @@
 import { CreateProjectModal } from "components/createProjectModal";
+import { CustomModal } from "components/customModal";
+import { DeleteProjectModal } from "components/deleteProjectModal";
 import Api from "helpers/api";
 import { Project } from "helpers/types";
-import { App, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
+import {
+	App,
+	FileSystemAdapter,
+	Notice,
+	Plugin,
+	PluginSettingTab,
+	Setting,
+} from "obsidian";
 import { FolderSuggest } from "settings/suggesters/FolderSuggester";
 
 interface MarkbasePluginSettings {
@@ -103,21 +112,97 @@ class MarkbaseSettingTab extends PluginSettingTab {
 
 			if (this.plugin.projects.length > 0) {
 				containerEl.createEl("p", {
-					text: "You can resync your projects here or manage/delete them from the Markbase dashboard",
+					text: "Manage your projects here or from the Markbase app dashboard",
 				});
 				for (const project of this.plugin.projects) {
 					new Setting(containerEl)
-						.setName(project.name)
-						.setDesc(
-							`Root Folder - ${project.folderToShare} | ${
-								project.public ? "Public" : "Private"
-							}`
-						)
+						.setName(project.name + ` - ${project.folderToShare}`)
+						.setDesc(`Live at ${project.publishedUrl}`)
 						.addButton((button) =>
 							button.setButtonText("Sync").onClick(async (e) => {
+								const loadingModal = new CustomModal(
+									app,
+									"Syncing...",
+									"Please wait for the project to finish syncing. This can take a while for large projects"
+								);
+								loadingModal.open();
+
 								// Re sync the project - i.e. reupload files and push changes to github
+								// Get files and zip them
+								let basePath = "";
+								if (
+									this.app.vault.adapter instanceof
+									FileSystemAdapter
+								) {
+									basePath =
+										this.app.vault.adapter.getBasePath();
+								}
+								const zipper = require("zip-local");
+
+								// zipping a file
+								zipper.zip(
+									basePath + "/" + project.folderToShare,
+									(error: any, zipped: any) => {
+										if (!error) {
+											zipped.compress(); // compress before exporting
+											var buff = zipped.memory(); // get zipped file as Buffer
+
+											try {
+												this.plugin.apiClient
+													.syncProjectForUser(
+														project.slug,
+														buff
+													)
+													.then(() => {
+														loadingModal.close();
+
+														new CustomModal(
+															app,
+															"Project successfully synced!",
+															"Allow a few minutes for changes to go live! You can manage your project in the Markbase dashboard at https://markbase.xyz"
+														).open();
+													});
+											} catch (error) {
+												loadingModal.close();
+
+												new CustomModal(
+													app,
+													"An error occurred",
+													"Please contact support on https://markbase.xyz. You can find more information in Obsidian's console by pressing Ctrl+Shift+I"
+												);
+												console.error(
+													"Error occurred while trying to sync project - ",
+													error
+												);
+											}
+										} else {
+											new CustomModal(
+												app,
+												"An error occurred",
+												"Please contact support on https://markbase.xyz. You can find more information in Obsidian's console by pressing Ctrl+Shift+I"
+											);
+											console.error(
+												"Error occurred while trying to zip files to sync the project - ",
+												error
+											);
+										}
+									}
+								);
 							})
-						);
+						)
+						.addButton((button) => {
+							button
+								.setButtonText("Delete")
+								.setWarning()
+								.onClick(async (e) => {
+									new DeleteProjectModal(
+										app,
+										this.plugin,
+										this.plugin.settings.markbaseUserToken,
+										project.id
+									).open();
+								});
+						});
 				}
 			} else {
 				containerEl.createEl("p", {
