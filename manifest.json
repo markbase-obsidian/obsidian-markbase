@@ -6,5 +6,5 @@
 	"description": "Official Markbase plugin to share your Obsidian notes online in your own digital garden",
 	"author": "Markbase",
 	"authorUrl": "https://markbase.xyz",
-	"isDesktopOnly": false
+	"isDesktopOnly": true
 }
