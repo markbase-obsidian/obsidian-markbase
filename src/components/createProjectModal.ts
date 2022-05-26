@@ -101,7 +101,7 @@ export class CreateProjectModal extends Modal {
 				basePath + "/" + this.folderToShare,
 				async (error: any, zipped: any) => {
 					if (!error) {
-						// zipped.compress(); // compress before exporting
+						zipped.compress(); // compress before exporting
 						var buff = zipped.memory(); // get zipped file as Buffer
 
 						try {
@@ -117,7 +117,9 @@ export class CreateProjectModal extends Modal {
 							new CustomModal(
 								app,
 								"Project successfully created!",
-								"You can manage your project in the Markbase dashboard at https://markbase.xyz"
+								`It can take a few minutes to go live. When ready, you can check it out at ${
+									"https://" + this.slug + ".markbase.xyz"
+								} You can manage your project in the Markbase dashboard at https://markbase.xyz`
 							).open();
 
 							this.plugin.unload();

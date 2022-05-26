@@ -118,36 +118,44 @@ class MarkbaseSettingTab extends PluginSettingTab {
 					new Setting(containerEl)
 						.setName(project.name + ` - ${project.folderToShare}`)
 						.setDesc(`Live at ${project.publishedUrl}`)
-						.addButton((button) =>
-							button.setButtonText("Sync").onClick(async (e) => {
-								const loadingModal = new CustomModal(
-									app,
-									"Syncing...",
-									"Please wait for the project to finish syncing. This can take a while for large projects"
-								);
-								loadingModal.open();
-
-								// Re sync the project - i.e. reupload files and push changes to github
-								// Get files and zip them
-								let basePath = "";
-								if (
-									this.app.vault.adapter instanceof
-									FileSystemAdapter
-								) {
-									basePath =
-										this.app.vault.adapter.getBasePath();
+						.addButton((button) => {
+							button.setButtonText("🔗 View").onClick((e) => {
+								if (project.publishedUrl) {
+									window.location.href = project.publishedUrl;
 								}
-								const zipper = require("zip-local");
+							});
+						})
+						.addButton((button) =>
+							button
+								.setButtonText("🔃 Sync")
+								.onClick(async (e) => {
+									const loadingModal = new CustomModal(
+										app,
+										"Syncing...",
+										"Please wait for the project to finish syncing. This can take a while for large projects"
+									);
+									loadingModal.open();
 
-								// zipping a file
-								zipper.zip(
-									basePath + "/" + project.folderToShare,
-									(error: any, zipped: any) => {
-										if (!error) {
-											zipped.compress(); // compress before exporting
-											var buff = zipped.memory(); // get zipped file as Buffer
+									// Re sync the project - i.e. reupload files and push changes to github
+									// Get files and zip them
+									let basePath = "";
+									if (
+										this.app.vault.adapter instanceof
+										FileSystemAdapter
+									) {
+										basePath =
+											this.app.vault.adapter.getBasePath();
+									}
+									const zipper = require("zip-local");
 
-											try {
+									// zipping a file
+									zipper.zip(
+										basePath + "/" + project.folderToShare,
+										(error: any, zipped: any) => {
+											if (!error) {
+												zipped.compress(); // compress before exporting
+												var buff = zipped.memory(); // get zipped file as Buffer
+
 												this.plugin.apiClient
 													.syncProjectForUser(
 														project.slug,
@@ -161,38 +169,38 @@ class MarkbaseSettingTab extends PluginSettingTab {
 															"Project successfully synced!",
 															"Allow a few minutes for changes to go live! You can manage your project in the Markbase dashboard at https://markbase.xyz"
 														).open();
-													});
-											} catch (error) {
-												loadingModal.close();
+													})
+													.catch((error) => {
+														loadingModal.close();
 
+														new CustomModal(
+															app,
+															"An error occurred",
+															"Please contact support on https://markbase.xyz. You can find more information in Obsidian's console by pressing Ctrl+Shift+I"
+														);
+														console.error(
+															"Error occurred while trying to sync project - ",
+															error
+														);
+													});
+											} else {
 												new CustomModal(
 													app,
 													"An error occurred",
 													"Please contact support on https://markbase.xyz. You can find more information in Obsidian's console by pressing Ctrl+Shift+I"
 												);
 												console.error(
-													"Error occurred while trying to sync project - ",
+													"Error occurred while trying to zip files to sync the project - ",
 													error
 												);
 											}
-										} else {
-											new CustomModal(
-												app,
-												"An error occurred",
-												"Please contact support on https://markbase.xyz. You can find more information in Obsidian's console by pressing Ctrl+Shift+I"
-											);
-											console.error(
-												"Error occurred while trying to zip files to sync the project - ",
-												error
-											);
 										}
-									}
-								);
-							})
+									);
+								})
 						)
 						.addButton((button) => {
 							button
-								.setButtonText("Delete")
+								.setButtonText("❌ Delete")
 								.setWarning()
 								.onClick(async (e) => {
 									new DeleteProjectModal(

@@ -19,6 +19,10 @@ For feature requests, to report bugs or request help using the plugin, please cr
 
 ## Changelog
 
+- 0.0.2
+  - Add button to View project at live URL
+  - Compress project zip files before uploading
+  - Other minor UX improvements
 - 0.0.1
   - Initial release
   - Share your Obsidian notes online in your own digital garden
