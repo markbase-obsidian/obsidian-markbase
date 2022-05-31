@@ -20,31 +20,50 @@ export class CreateProjectModal extends Modal {
 	onOpen() {
 		let { contentEl } = this;
 		contentEl.createEl("h2", { text: "Create a new Markbase project" });
-		contentEl.createEl("p", {
-			text: "Ensure your project's deepest file/path isn't too long. A good way to test this is to see if you can copy your chosen folder manually without any errors",
-		});
-
-		new Setting(contentEl).setName("Project Name").addText((text) =>
-			text.setValue("").onChange(async (value) => {
-				this.name = value;
-			})
-		);
 
 		new Setting(contentEl)
-			.setName("Slug")
-			.setDesc(
-				"A unique easy-to-read identifier for your website (e.g. tomsblog)"
-			)
+			.setName("Project Name")
+			.setDesc("The name you want to display publicly on your site")
 			.addText((text) =>
 				text.setValue("").onChange(async (value) => {
-					this.slug = value;
+					this.name = value;
 				})
 			);
 
 		new Setting(contentEl)
+			.setName("Slug")
+			.setDesc(
+				"A unique easy-to-read identifier for your website (e.g. tomsblog) - must be lowercase, between 5-50 characters, contain only letters, hyphens or numbers, and no hyphens at the start or end"
+			)
+			.addText((text) =>
+				text.setValue("").onChange(async (value) => {
+					if (
+						value.toLowerCase() !== value ||
+						value.startsWith("-") ||
+						value.endsWith("-") ||
+						value.length > 50 ||
+						value.length < 5 ||
+						!/^[a-z0-9-]*$/.test(value)
+					) {
+						this.toggleSlugError(true);
+					} else {
+						this.toggleSlugError(false);
+					}
+					this.slug = value;
+				})
+			);
+
+		contentEl.createEl("p", {
+			text: "",
+			attr: {
+				id: "slug-error",
+			},
+		});
+
+		new Setting(contentEl)
 			.setName("Folder to share/upload")
 			.setDesc(
-				"Choose the file/folder to upload online. Note that all files and folders inside your chosen directory will be made publicly available online."
+				"Choose the file/folder to upload online. Note that all files and folders inside your chosen directory will be made publicly available online. Ensure the deepest file/path isn't too long. A good way to test this is to see if you can copy your chosen folder manually without any errors"
 			)
 			.addSearch((search) => {
 				new FolderSuggest(this.app, search.inputEl);
@@ -60,7 +79,25 @@ export class CreateProjectModal extends Modal {
 			button.setButtonText("Create").onClick((e) => {
 				this.submitNewProject();
 			});
+
+			button.setClass("createProjectButton");
 		});
+	}
+
+	toggleSlugError(slugError: boolean) {
+		let { contentEl } = this;
+		const slugErrorEl = contentEl.querySelector("#slug-error");
+		const createProjectButton = contentEl.querySelector(
+			".createProjectButton"
+		);
+
+		if (slugError) {
+			slugErrorEl.textContent = "Please enter a valid slug";
+			createProjectButton.toggleAttribute("disabled");
+		} else {
+			slugErrorEl.textContent = "";
+			createProjectButton.toggleAttribute("disabled");
+		}
 	}
 
 	onClose() {
