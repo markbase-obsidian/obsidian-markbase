@@ -15,10 +15,16 @@ Official [Markbase](https://markbase.xyz) plugin to share your Obsidian notes on
 
 *The plugin is in the **alpha** stage of development and has currently only been tested on desktop*
 
+There are **notable bugs** which can be found in the [Markbase landing page](https://markbase.xyz)
+
 For feature requests, to report bugs or request help using the plugin, please create an issue or use the live chat/Help & Support form in the [Markbase app](https://app.markbase.xyz)
 
 ## Changelog
 
+- 0.0.3
+  - Check for correct slug format before creation
+  - Refresh projects without unloading plugin
+  - Check valid token without reloading Obsidian
 - 0.0.2
   - Add button to View project at live URL
   - Compress project zip files before uploading
