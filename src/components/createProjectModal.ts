@@ -1,5 +1,5 @@
 import Api from "helpers/api";
-import MarkbasePlugin from "main";
+import MarkbasePlugin, { MarkbaseSettingTab } from "main";
 import { App, FileSystemAdapter, Modal, Setting } from "obsidian";
 import { FolderSuggest } from "settings/suggesters/FolderSuggester";
 import { CustomModal } from "./customModal";
@@ -7,14 +7,21 @@ import { CustomModal } from "./customModal";
 export class CreateProjectModal extends Modal {
 	markbaseUserToken: string;
 	plugin: MarkbasePlugin;
+	settings: MarkbaseSettingTab;
 	name: string;
 	slug: string;
 	folderToShare: string;
 
-	constructor(app: App, plugin: MarkbasePlugin, markbaseUserToken: string) {
+	constructor(
+		app: App,
+		plugin: MarkbasePlugin,
+		settings: MarkbaseSettingTab,
+		markbaseUserToken: string
+	) {
 		super(app);
 		this.markbaseUserToken = markbaseUserToken;
 		this.plugin = plugin;
+		this.settings = settings;
 	}
 
 	onOpen() {
@@ -149,18 +156,17 @@ export class CreateProjectModal extends Modal {
 								buff
 							);
 							loadingModal.close();
-							this.close();
+							this.settings.loadProjects().then(() => {
+								this.close();
 
-							new CustomModal(
-								app,
-								"Project successfully created!",
-								`It can take a few minutes to go live. When ready, you can check it out at ${
-									"https://" + this.slug + ".markbase.xyz"
-								} You can manage your project in the Markbase dashboard at https://markbase.xyz`
-							).open();
-
-							this.plugin.unload();
-							this.plugin.load();
+								new CustomModal(
+									app,
+									"Project successfully created!",
+									`It can take a few minutes to go live. When ready, you can check it out at ${
+										"https://" + this.slug + ".markbase.xyz"
+									}. You can manage your project in the Markbase dashboard at https://markbase.xyz`
+								).open();
+							});
 						} catch (error) {
 							loadingModal.close();
 							this.close();

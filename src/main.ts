@@ -75,9 +75,23 @@ export default class MarkbasePlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
+	async refreshProjects() {
+		if (this.tokenValid) {
+			// Get projects
+			const projects = await this.apiClient.listProjectsForUser();
+			if (projects.data.projects) {
+				this.projects = projects.data.projects;
+			}
+		} else {
+			new Notice(
+				"Markbase Token Invalid - unable to fetch/create projects"
+			);
+		}
+	}
 }
 
-class MarkbaseSettingTab extends PluginSettingTab {
+export class MarkbaseSettingTab extends PluginSettingTab {
 	plugin: MarkbasePlugin;
 
 	constructor(app: App, plugin: MarkbasePlugin) {
@@ -89,7 +103,6 @@ class MarkbaseSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-
 		containerEl.createEl("h2", { text: "Markbase Settings" });
 
 		new Setting(containerEl)
@@ -109,13 +122,56 @@ class MarkbaseSettingTab extends PluginSettingTab {
 
 		if (this.plugin.tokenValid) {
 			containerEl.createEl("h3", { text: "Your Projects" });
+			containerEl.createDiv({
+				attr: {
+					id: "projectsContainer",
+				},
+			});
 
+			this.loadProjects();
+
+			new Setting(containerEl)
+				.addButton((button) => {
+					button
+						.setButtonText("Refresh")
+						// .setDisabled(!this.plugin.settings.tokenValid)
+						.onClick((e) => {
+							this.loadProjects();
+						});
+				})
+				.addButton((button) => {
+					button
+						.setButtonText("Create Project")
+						// .setDisabled(!this.plugin.settings.tokenValid)
+						.onClick((e) => {
+							new CreateProjectModal(
+								app,
+								this.plugin,
+								this,
+								this.plugin.settings.markbaseUserToken
+							).open();
+						});
+				});
+		} else {
+			containerEl.createEl("p", {
+				text: "Invalid token - please enter the right token and then restart Obsidian to list, resync and create projects",
+			});
+		}
+	}
+
+	async loadProjects(): Promise<void> {
+		const { containerEl } = this;
+		const projectsContainer = containerEl.querySelector(
+			"#projectsContainer"
+		) as HTMLElement;
+		projectsContainer.empty();
+		this.plugin.refreshProjects().then(() => {
 			if (this.plugin.projects.length > 0) {
-				containerEl.createEl("p", {
+				projectsContainer.createEl("p", {
 					text: "Manage your projects here or from the Markbase app dashboard",
 				});
 				for (const project of this.plugin.projects) {
-					new Setting(containerEl)
+					new Setting(projectsContainer)
 						.setName(project.name + ` - ${project.folderToShare}`)
 						.setDesc(`Live at ${project.publishedUrl}`)
 						.addButton((button) => {
@@ -206,6 +262,7 @@ class MarkbaseSettingTab extends PluginSettingTab {
 									new DeleteProjectModal(
 										app,
 										this.plugin,
+										this,
 										this.plugin.settings.markbaseUserToken,
 										project.id
 									).open();
@@ -213,27 +270,10 @@ class MarkbaseSettingTab extends PluginSettingTab {
 						});
 				}
 			} else {
-				containerEl.createEl("p", {
+				projectsContainer.createEl("p", {
 					text: "No projects to display. You can create a project using the button below",
 				});
 			}
-
-			new Setting(containerEl).addButton((button) => {
-				button
-					.setButtonText("Create Project")
-					// .setDisabled(!this.plugin.settings.tokenValid)
-					.onClick((e) => {
-						new CreateProjectModal(
-							app,
-							this.plugin,
-							this.plugin.settings.markbaseUserToken
-						).open();
-					});
-			});
-		} else {
-			containerEl.createEl("p", {
-				text: "Invalid token - please enter the right token and then restart Obsidian to list, resync and create projects",
-			});
-		}
+		});
 	}
 }

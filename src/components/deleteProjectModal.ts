@@ -1,23 +1,25 @@
 import Api from "helpers/api";
-import MarkbasePlugin from "main";
-import { App, FileSystemAdapter, Modal, Setting } from "obsidian";
-import { FolderSuggest } from "settings/suggesters/FolderSuggester";
+import MarkbasePlugin, { MarkbaseSettingTab } from "main";
+import { App, Modal, Setting } from "obsidian";
 import { CustomModal } from "./customModal";
 
 export class DeleteProjectModal extends Modal {
 	markbaseUserToken: string;
 	plugin: MarkbasePlugin;
+	settings: MarkbaseSettingTab;
 	projectId: string;
 
 	constructor(
 		app: App,
 		plugin: MarkbasePlugin,
+		settings: MarkbaseSettingTab,
 		markbaseUserToken: string,
 		projectId: string
 	) {
 		super(app);
 		this.markbaseUserToken = markbaseUserToken;
 		this.plugin = plugin;
+		this.settings = settings;
 		this.projectId = projectId;
 	}
 
@@ -64,9 +66,9 @@ export class DeleteProjectModal extends Modal {
 				this.projectId
 			);
 			loadingModal.close();
-			this.close();
-			this.plugin.unload();
-			this.plugin.load();
+			this.settings.loadProjects().then(() => {
+				this.close();
+			});
 		} catch (error) {
 			loadingModal.close();
 			this.close();
