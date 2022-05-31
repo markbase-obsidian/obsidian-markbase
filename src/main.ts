@@ -11,7 +11,7 @@ import {
 	PluginSettingTab,
 	Setting,
 } from "obsidian";
-import { FolderSuggest } from "settings/suggesters/FolderSuggester";
+import AwesomeDebouncePromise from "awesome-debounce-promise";
 
 interface MarkbasePluginSettings {
 	markbaseUserToken: string;
@@ -28,38 +28,29 @@ export default class MarkbasePlugin extends Plugin {
 	projects: Project[] = [];
 
 	async onload() {
-		console.log("Loading Markbase Sync for Obsidian plugin");
+		console.info("Loading Markbase Sync for Obsidian plugin");
 		await this.loadSettings();
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new MarkbaseSettingTab(this.app, this));
 
+		this.apiClient = new Api(this.settings.markbaseUserToken);
+
 		// Verify token
-		try {
-			this.apiClient = new Api(this.settings.markbaseUserToken);
-			const verifiedResult = await this.apiClient.verifyObsidianToken();
-
-			if (verifiedResult.data.verified) {
-				this.tokenValid = true;
+		this.verifyToken().then(async () => {
+			if (this.tokenValid) {
+				// Get projects
+				const projects = await this.apiClient.listProjectsForUser();
+				if (projects.data.projects) {
+					this.projects = projects.data.projects;
+				}
 			} else {
-				this.tokenValid = false;
+				new Notice(
+					"Markbase Token Invalid - unable to fetch/create projects"
+				);
 			}
-		} catch (error) {
-			this.tokenValid = false;
-		}
 
-		if (this.tokenValid) {
-			// Get projects
-			const projects = await this.apiClient.listProjectsForUser();
-			if (projects.data.projects) {
-				this.projects = projects.data.projects;
-			}
-		} else {
-			new Notice(
-				"Markbase Token Invalid - unable to fetch/create projects"
-			);
-		}
-
-		await this.saveSettings();
+			await this.saveSettings();
+		});
 	}
 
 	onunload() {}
@@ -89,6 +80,28 @@ export default class MarkbasePlugin extends Plugin {
 			);
 		}
 	}
+
+	verifyToken = async (): Promise<void> => {
+		try {
+			this.apiClient = this.apiClient.updateClient(
+				this.settings.markbaseUserToken
+			);
+			const verifiedResult = await this.apiClient.verifyObsidianToken();
+
+			if (verifiedResult.data.verified) {
+				this.tokenValid = true;
+			} else {
+				this.tokenValid = false;
+			}
+		} catch (error) {
+			this.tokenValid = false;
+		}
+	};
+
+	debouncedVerifyToken = AwesomeDebouncePromise(this.verifyToken, 500, {
+		accumulate: false,
+		onlyResolvesLast: true,
+	});
 }
 
 export class MarkbaseSettingTab extends PluginSettingTab {
@@ -116,13 +129,32 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.markbaseUserToken)
 					.onChange(async (value) => {
 						this.plugin.settings.markbaseUserToken = value;
-						await this.plugin.saveSettings();
+						this.plugin.debouncedVerifyToken().then(() => {
+							this.plugin.saveSettings();
+							this.displaySettings();
+						});
 					})
 			);
 
+		containerEl.createDiv({
+			attr: {
+				id: "settingsContainer",
+			},
+		});
+
+		this.displaySettings();
+	}
+
+	async displaySettings(): Promise<void> {
+		const { containerEl } = this;
+		const settingsContainer = containerEl.querySelector(
+			"#settingsContainer"
+		) as HTMLElement;
+		settingsContainer.empty();
+
 		if (this.plugin.tokenValid) {
-			containerEl.createEl("h3", { text: "Your Projects" });
-			containerEl.createDiv({
+			settingsContainer.createEl("h3", { text: "Your Projects" });
+			settingsContainer.createDiv({
 				attr: {
 					id: "projectsContainer",
 				},
@@ -130,7 +162,7 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 
 			this.loadProjects();
 
-			new Setting(containerEl)
+			new Setting(settingsContainer)
 				.addButton((button) => {
 					button
 						.setButtonText("Refresh")
@@ -153,8 +185,8 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 						});
 				});
 		} else {
-			containerEl.createEl("p", {
-				text: "Invalid token - please enter the right token and then restart Obsidian to list, resync and create projects",
+			settingsContainer.createEl("p", {
+				text: "Invalid token - please enter the right token to list, resync and create projects",
 			});
 		}
 	}

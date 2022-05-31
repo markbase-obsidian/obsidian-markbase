@@ -6,7 +6,7 @@ class Api {
 	apiBaseUrl: string;
 
 	constructor(markbaseUserToken: string) {
-		this.apiBaseUrl = "https://api.markbase.xyz";
+		this.apiBaseUrl = "http://localhost:8000";
 		this.markbaseUserToken = markbaseUserToken;
 
 		const headers: AxiosRequestHeaders = {
@@ -23,6 +23,26 @@ class Api {
 			headers: headers,
 		});
 	}
+
+	updateClient = (newToken: string) => {
+		this.markbaseUserToken = newToken;
+
+		const headers: AxiosRequestHeaders = {
+			Accept: "application/json",
+		};
+
+		if (this.markbaseUserToken) {
+			headers.Authorization = `Obsidian ${this.markbaseUserToken}`;
+		}
+
+		this.client = axios.create({
+			baseURL: this.apiBaseUrl,
+			timeout: 31000,
+			headers: headers,
+		});
+
+		return this;
+	};
 
 	// Endpoints
 	verifyObsidianToken = () => {
