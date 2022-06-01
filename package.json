@@ -24,8 +24,8 @@
 	},
 	"dependencies": {
 		"@popperjs/core": "^2.11.5",
-		"awesome-debounce-promise": "^2.1.0",
 		"axios": "^0.27.2",
+		"electron": "^19.0.2",
 		"zip-local": "^0.3.5"
 	}
 }

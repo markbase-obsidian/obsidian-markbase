@@ -1,7 +1,3 @@
-body {
-
-}
-
-#slug-error {
+#markbase-project-slug-error, .markbase-invalid-token-error {
     color: red;
 }

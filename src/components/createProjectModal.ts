@@ -1,4 +1,6 @@
 import Api from "helpers/api";
+import { displayErrorModal } from "helpers/modals";
+import { zipDirectory } from "helpers/zip";
 import MarkbasePlugin, { MarkbaseSettingTab } from "main";
 import { App, FileSystemAdapter, Modal, Setting } from "obsidian";
 import { FolderSuggest } from "settings/suggesters/FolderSuggester";
@@ -43,7 +45,7 @@ export class CreateProjectModal extends Modal {
 				"A unique easy-to-read identifier for your website (e.g. tomsblog) - must be lowercase, between 5-50 characters, contain only letters, hyphens or numbers, and no hyphens at the start or end"
 			)
 			.addText((text) =>
-				text.setValue("").onChange(async (value) => {
+				text.setValue("").onChange((value) => {
 					if (
 						value.toLowerCase() !== value ||
 						value.startsWith("-") ||
@@ -63,7 +65,7 @@ export class CreateProjectModal extends Modal {
 		contentEl.createEl("p", {
 			text: "",
 			attr: {
-				id: "slug-error",
+				id: "markbase-project-slug-error",
 			},
 		});
 
@@ -93,7 +95,9 @@ export class CreateProjectModal extends Modal {
 
 	toggleSlugError(slugError: boolean) {
 		let { contentEl } = this;
-		const slugErrorEl = contentEl.querySelector("#slug-error");
+		const slugErrorEl = contentEl.querySelector(
+			"#markbase-project-slug-error"
+		);
 		const createProjectButton = contentEl.querySelector(
 			".createProjectButton"
 		);
@@ -125,75 +129,59 @@ export class CreateProjectModal extends Modal {
 		);
 
 		if (slugUsed.data.project) {
-			loadingModal.close();
 			// Slug is in use - display warning message
 			new CustomModal(
 				app,
 				"That slug's already in use",
 				"Please try again with a different slug"
 			).open();
+			loadingModal.close();
 		} else {
 			// Get files and zip them
 			let basePath = "";
 			if (this.app.vault.adapter instanceof FileSystemAdapter) {
 				basePath = this.app.vault.adapter.getBasePath();
 			}
-			const zipper = require("zip-local");
 
-			// zipping a file
-			zipper.zip(
-				basePath + "/" + this.folderToShare,
-				async (error: any, zipped: any) => {
-					if (!error) {
-						zipped.compress(); // compress before exporting
-						var buff = zipped.memory(); // get zipped file as Buffer
+			try {
+				const zipBuffer = await zipDirectory(
+					basePath + "/" + this.folderToShare
+				);
 
-						try {
-							await this.plugin.apiClient.createProjectForUser(
-								this.slug,
-								this.name,
-								this.folderToShare,
-								buff
-							);
-							loadingModal.close();
-							this.settings.loadProjects().then(() => {
-								this.close();
+				try {
+					await this.plugin.apiClient.createProjectForUser(
+						this.slug,
+						this.name,
+						this.folderToShare,
+						zipBuffer
+					);
 
-								new CustomModal(
-									app,
-									"Project successfully created!",
-									`It can take a few minutes to go live. When ready, you can check it out at ${
-										"https://" + this.slug + ".markbase.xyz"
-									}. You can manage your project in the Markbase dashboard at https://markbase.xyz`
-								).open();
-							});
-						} catch (error) {
-							loadingModal.close();
-							this.close();
-
-							new CustomModal(
-								app,
-								"An error occurred",
-								"Please contact support on https://markbase.xyz. You can find more information in Obsidian's console by pressing Ctrl+Shift+I"
-							);
-							console.error(
-								"Error occurred while trying to create new project - ",
-								error
-							);
-						}
-					} else {
-						new CustomModal(
-							app,
-							"An error occurred",
-							"Please contact support on https://markbase.xyz. You can find more information in Obsidian's console by pressing Ctrl+Shift+I"
-						);
-						console.error(
-							"Error occurred while trying to zip files for the project - ",
-							error
-						);
-					}
+					await this.settings.loadProjects();
+					new CustomModal(
+						app,
+						"Project successfully created!",
+						`It can take a few minutes to go live. When ready, you can check it out at ${
+							"https://" + this.slug + ".markbase.xyz"
+						}. You can manage your project in the Markbase dashboard at https://markbase.xyz`
+					).open();
+					loadingModal.close();
+					this.close();
+				} catch (error) {
+					displayErrorModal(app);
+					loadingModal.close();
+					this.close();
+					console.error(
+						"Error occurred while trying to create new project - ",
+						error
+					);
 				}
-			);
+			} catch (error) {
+				displayErrorModal(app);
+				console.error(
+					"Error occurred while trying to zip files for the project - ",
+					error
+				);
+			}
 		}
 	}
 }

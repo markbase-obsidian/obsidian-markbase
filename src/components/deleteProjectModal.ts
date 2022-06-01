@@ -1,4 +1,5 @@
 import Api from "helpers/api";
+import { displayErrorModal } from "helpers/modals";
 import MarkbasePlugin, { MarkbaseSettingTab } from "main";
 import { App, Modal, Setting } from "obsidian";
 import { CustomModal } from "./customModal";
@@ -65,18 +66,13 @@ export class DeleteProjectModal extends Modal {
 			await new Api(this.markbaseUserToken).deleteProjectById(
 				this.projectId
 			);
-			loadingModal.close();
-			this.settings.loadProjects().then(() => {
-				this.close();
-			});
-		} catch (error) {
-			loadingModal.close();
+			await this.settings.loadProjects();
 			this.close();
-			new CustomModal(
-				app,
-				"An error occurred",
-				"Please try again or contact Markbase Support in the Markbase app"
-			).open();
+			loadingModal.close();
+		} catch (error) {
+			displayErrorModal(app);
+			this.close();
+			loadingModal.close();
 		}
 	}
 }
