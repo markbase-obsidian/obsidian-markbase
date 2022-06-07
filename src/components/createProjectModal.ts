@@ -13,6 +13,7 @@ export class CreateProjectModal extends Modal {
 	name: string;
 	slug: string;
 	folderToShare: string;
+	slugError: boolean;
 
 	constructor(
 		app: App,
@@ -36,6 +37,7 @@ export class CreateProjectModal extends Modal {
 			.addText((text) =>
 				text.setValue("").onChange(async (value) => {
 					this.name = value;
+					this.checkIfOkayToSubmit();
 				})
 			);
 
@@ -46,6 +48,10 @@ export class CreateProjectModal extends Modal {
 			)
 			.addText((text) =>
 				text.setValue("").onChange((value) => {
+					let { contentEl } = this;
+					const slugErrorEl = contentEl.querySelector(
+						"#markbase-project-slug-error"
+					);
 					if (
 						value.toLowerCase() !== value ||
 						value.startsWith("-") ||
@@ -54,11 +60,14 @@ export class CreateProjectModal extends Modal {
 						value.length < 5 ||
 						!/^[a-z0-9-]*$/.test(value)
 					) {
-						this.toggleSlugError(true);
+						this.slugError = true;
+						slugErrorEl.textContent = "Please enter a valid slug";
 					} else {
-						this.toggleSlugError(false);
+						this.slugError = false;
+						slugErrorEl.textContent = "";
 					}
 					this.slug = value;
+					this.checkIfOkayToSubmit();
 				})
 			);
 
@@ -81,33 +90,32 @@ export class CreateProjectModal extends Modal {
 					.setValue(this.folderToShare)
 					.onChange((newFolder) => {
 						this.folderToShare = newFolder;
+						this.checkIfOkayToSubmit();
 					});
 			});
 
 		new Setting(contentEl).addButton((button) => {
-			button.setButtonText("Create").onClick((e) => {
-				this.submitNewProject();
-			});
+			button
+				.setButtonText("Create")
+				.onClick((e) => {
+					this.submitNewProject();
+				})
+				.setDisabled(true);
 
 			button.setClass("createProjectButton");
 		});
 	}
 
-	toggleSlugError(slugError: boolean) {
+	checkIfOkayToSubmit() {
 		let { contentEl } = this;
-		const slugErrorEl = contentEl.querySelector(
-			"#markbase-project-slug-error"
-		);
 		const createProjectButton = contentEl.querySelector(
 			".createProjectButton"
 		);
 
-		if (slugError) {
-			slugErrorEl.textContent = "Please enter a valid slug";
-			createProjectButton.toggleAttribute("disabled");
+		if (this.slugError || !this.folderToShare || !this.name || !this.slug) {
+			createProjectButton.setAttr("disabled", this.slugError);
 		} else {
-			slugErrorEl.textContent = "";
-			createProjectButton.toggleAttribute("disabled");
+			createProjectButton.removeAttribute("disabled");
 		}
 	}
 

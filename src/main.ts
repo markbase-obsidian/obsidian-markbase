@@ -215,7 +215,10 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 						button.setButtonText("🔗 View").onClick((e) => {
 							if (project.publishedUrl) {
 								shell.openExternal(
-									"https://" + project.publishedUrl.trim()
+									"https://" +
+										project.publishedUrl
+											.replace("https://", "")
+											.trim()
 								);
 							}
 						});
