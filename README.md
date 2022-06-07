@@ -21,6 +21,8 @@ For feature requests, to report bugs or request help using the plugin, please cr
 
 ## Changelog
 
+- 0.0.5
+  - Clearer create project workflow (+ button more visibly disabled if criteria not met)
 - 0.0.4
   - Update API URL
 - 0.0.3
