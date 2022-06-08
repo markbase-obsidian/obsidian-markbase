@@ -14,6 +14,7 @@ export class CreateProjectModal extends Modal {
 	slug: string;
 	folderToShare: string;
 	slugError: boolean;
+	createProjectButton: Setting;
 
 	constructor(
 		app: App,
@@ -94,28 +95,25 @@ export class CreateProjectModal extends Modal {
 					});
 			});
 
-		new Setting(contentEl).addButton((button) => {
-			button
-				.setButtonText("Create")
-				.onClick((e) => {
-					this.submitNewProject();
-				})
-				.setDisabled(true);
+		this.createProjectButton = new Setting(contentEl).addButton(
+			(button) => {
+				button
+					.setButtonText("Create")
+					.onClick((e) => {
+						this.submitNewProject();
+					})
+					.setDisabled(true);
 
-			button.setClass("createProjectButton");
-		});
+				button.setClass("createProjectButton");
+			}
+		);
 	}
 
 	checkIfOkayToSubmit() {
-		let { contentEl } = this;
-		const createProjectButton = contentEl.querySelector(
-			".createProjectButton"
-		);
-
 		if (this.slugError || !this.folderToShare || !this.name || !this.slug) {
-			createProjectButton.setAttr("disabled", this.slugError);
+			this.createProjectButton.setDisabled(true);
 		} else {
-			createProjectButton.removeAttribute("disabled");
+			this.createProjectButton.setDisabled(false);
 		}
 	}
 
