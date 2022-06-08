@@ -204,7 +204,12 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 		await this.plugin.refreshProjects();
 		if (this.plugin.projects.length > 0) {
 			projectsContainer.createEl("p", {
-				text: "Manage your projects here or from the Markbase app dashboard",
+				text: "Manage your projects here or from the Markbase app dashboard.",
+			});
+
+			projectsContainer.createEl("p", {
+				text: "Note - theme updates don't automatically reflect in projects. To update a project's theme to the latest template, simply delete and re-create the project",
+				cls: "markbase-italic",
 			});
 
 			for (const project of this.plugin.projects) {

@@ -7,3 +7,7 @@
     /* color: rgb(100 116 139); */
     color: black;
 }
+
+.markbase-italic {
+    font-style: italic;
+}
