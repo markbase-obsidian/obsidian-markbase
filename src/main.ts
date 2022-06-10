@@ -15,6 +15,7 @@ import {
 	Setting,
 } from "obsidian";
 import { shell } from "electron";
+import { syncAllMarkbaseProjects, syncMarkbaseProject } from "helpers/sync";
 
 interface MarkbasePluginSettings {
 	markbaseUserToken: string;
@@ -36,6 +37,25 @@ export default class MarkbasePlugin extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		const settingsTab = new MarkbaseSettingTab(this.app, this);
 		this.addSettingTab(settingsTab);
+
+		// This creates an icon in the left ribbon.
+		this.addRibbonIcon(
+			"up-and-down-arrows",
+			"Sync all Markbase projects",
+			(evt: MouseEvent) => {
+				// Called when the user clicks the icon.
+				syncAllMarkbaseProjects(this.app, this);
+			}
+		);
+
+		// This adds a simple command that can be triggered anywhere
+		this.addCommand({
+			id: "sync-all-markbase-projects-command",
+			name: "Sync all Markbase projects",
+			callback: () => {
+				syncAllMarkbaseProjects(this.app, this);
+			},
+		});
 
 		this.apiClient = new Api(this.settings.markbaseUserToken);
 		await this.saveSettings();
@@ -238,43 +258,29 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 							loadingModal.open();
 
 							// Re sync the project - i.e. reupload files and push changes to github
-							// Get files and zip them
-							let basePath = "";
-							if (
-								this.app.vault.adapter instanceof
-								FileSystemAdapter
-							) {
-								basePath = this.app.vault.adapter.getBasePath();
-							}
-
 							try {
-								const zipBuffer = await zipDirectory(
-									basePath + "/" + project.folderToShare
+								const synced = await syncMarkbaseProject(
+									this.app,
+									this.plugin,
+									project
 								);
-								try {
-									await this.plugin.apiClient.syncProjectForUser(
-										project.slug,
-										zipBuffer
-									);
 
+								if (synced) {
 									new CustomModal(
 										app,
 										"Project successfully synced!",
 										"Allow a few minutes for changes to go live! You can manage your project in the Markbase dashboard at https://markbase.xyz"
 									).open();
 									loadingModal.close();
-								} catch (error) {
+								} else {
 									displayErrorModal(app);
 									loadingModal.close();
-									console.error(
-										"Error occurred while trying to sync project - ",
-										error
-									);
 								}
 							} catch (error) {
 								displayErrorModal(app);
+								loadingModal.close();
 								console.error(
-									"Error occurred while trying to zip files to sync the project - ",
+									"Error occurred while trying to sync project - ",
 									error
 								);
 							}
