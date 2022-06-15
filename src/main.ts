@@ -210,6 +210,23 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 				text: "Invalid token - please enter the right token to list, resync and create projects",
 				cls: "markbase-invalid-token-error",
 			});
+
+			settingsContainer.createEl("p", {
+				text: "You can find your Markbase token in the Markbase dashboard",
+				cls: "markbase-invalid-token-error",
+			});
+
+			settingsContainer.createEl(
+				"button",
+				{ text: "Go to dashboard" },
+				(button) => {
+					button.onClickEvent((e) => {
+						shell.openExternal(
+							"https://app.markbase.xyz/dashboard"
+						);
+					});
+				}
+			);
 		}
 	}
 
@@ -269,7 +286,7 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 									new CustomModal(
 										app,
 										"Project successfully synced!",
-										"Allow a few minutes for changes to go live! You can manage your project in the Markbase dashboard at https://markbase.xyz"
+										"Please allow a few minutes for changes to go live! You can manage your project in the Markbase dashboard at https://markbase.xyz"
 									).open();
 									loadingModal.close();
 								} else {

@@ -1,3 +1,4 @@
+import { AxiosError } from "axios";
 import Api from "helpers/api";
 import { displayErrorModal } from "helpers/modals";
 import { zipDirectory } from "helpers/zip";
@@ -166,20 +167,31 @@ export class CreateProjectModal extends Modal {
 					new CustomModal(
 						app,
 						"Project successfully created!",
-						`It can take a few minutes to go live. When ready, you can check it out at ${
+						`Please wait a few minutes for it to go live at ${
 							"https://" + this.slug + ".markbase.xyz"
-						}. You can manage your project in the Markbase dashboard at https://markbase.xyz`
+						}.\nYou can manage your project in the Markbase dashboard at https://app.markbase.xyz`
 					).open();
 					loadingModal.close();
 					this.close();
 				} catch (error) {
-					displayErrorModal(app);
 					loadingModal.close();
 					this.close();
 					console.error(
 						"Error occurred while trying to create new project - ",
 						error
 					);
+					if (
+						(error as AxiosError).hasOwnProperty("response") &&
+						error.response.status === 413
+					) {
+						new CustomModal(
+							app,
+							"The chosen folder is too large",
+							"Please choose a folder that's less than 50MB in size"
+						).open();
+					} else {
+						displayErrorModal(app);
+					}
 				}
 			} catch (error) {
 				displayErrorModal(app);

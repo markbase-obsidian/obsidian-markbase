@@ -19,7 +19,7 @@ class Api {
 
 		this.client = axios.create({
 			baseURL: this.apiBaseUrl,
-			timeout: 31000,
+			timeout: 60000,
 			headers: headers,
 		});
 	}
@@ -37,7 +37,7 @@ class Api {
 
 		this.client = axios.create({
 			baseURL: this.apiBaseUrl,
-			timeout: 31000,
+			timeout: 60000,
 			headers: headers,
 		});
 
