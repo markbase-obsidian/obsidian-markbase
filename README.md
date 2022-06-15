@@ -2,7 +2,7 @@
 
 Official [Markbase](https://markbase.xyz) plugin to share your Obsidian notes online in your own digital garden
 
-![](https://s8.gifyu.com/images/ezgif.com-gif-maker439f2dfedb287b24.gif)
+![Demo GIF](./src/assets/demo.gif)
 
 ## Instructions
 
