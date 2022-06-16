@@ -186,8 +186,17 @@ export class CreateProjectModal extends Modal {
 					) {
 						new CustomModal(
 							app,
-							"The chosen folder is too large",
+							"Error - The chosen folder is too large",
 							"Please choose a folder that's less than 50MB in size"
+						).open();
+					} else if (
+						(error as AxiosError).hasOwnProperty("response") &&
+						error.response.status === 429
+					) {
+						new CustomModal(
+							app,
+							"Error - too many requests",
+							"Please wait an hour (if on the free plan) or a minute (if paid) from your last project creation/sync to create a new project."
 						).open();
 					} else {
 						displayErrorModal(app);

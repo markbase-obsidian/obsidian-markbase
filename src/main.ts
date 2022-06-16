@@ -68,6 +68,11 @@ export default class MarkbasePlugin extends Plugin {
 	async initializeProjects(settingsTab: MarkbaseSettingTab) {
 		if (!this.mounted) {
 			try {
+				this.syncManager = new SyncManager(
+					this.app,
+					this,
+					this.settings.autoSync
+				);
 				// Verify token
 				await this.verifyToken(settingsTab);
 				if (this.tokenValid) {
@@ -76,14 +81,6 @@ export default class MarkbasePlugin extends Plugin {
 					if (projects.data.projects) {
 						this.projects = projects.data.projects;
 					}
-
-					this.syncManager = new SyncManager(
-						this.app,
-						this,
-						this.settings.autoSync
-					);
-
-					this.syncManager.syncAllMarkbaseProjects();
 				} else {
 					new Notice(
 						"Markbase Token Invalid - unable to fetch/create projects"
@@ -279,9 +276,24 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 				text: "Manage your projects here or from the Markbase app dashboard.",
 			});
 
+			projectsContainer.createEl("h4", {
+				text: "Notes",
+			});
+
+			projectsContainer.createEl("li", {
+				text: "Projects can be created/synced up to once per hour (for free members) and once per minute (for paid members)",
+			});
+
+			projectsContainer.createEl("li", {
+				text: "To update a project's theme to the latest template, simply delete and re-create the project",
+			});
+
+			projectsContainer.createEl("li", {
+				text: "Changes can take a few minutes to go live (depending on the project size)",
+			});
+
 			projectsContainer.createEl("p", {
-				text: "Note - theme updates don't automatically reflect in projects. To update a project's theme to the latest template, simply delete and re-create the project",
-				cls: "markbase-italic",
+				text: "",
 			});
 
 			for (const project of this.plugin.projects) {

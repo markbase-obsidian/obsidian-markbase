@@ -69,13 +69,23 @@ export class SyncManager {
 
 				return true;
 			} catch (error) {
-				new Notice(
-					`Failed to sync project ${project.slug} - check the console for errors`
-				);
-				console.error(
-					"Error occurred while trying to sync project - ",
-					error
-				);
+				if (
+					error.hasOwnProperty("response") &&
+					error.response.status === 429
+				) {
+					new Notice(
+						`Failed to sync project ${project.slug} - can only sync a project once per hour (free) or minute (premium)`
+					);
+				} else {
+					new Notice(
+						`Failed to sync project ${project.slug} - check the console for errors`
+					);
+					console.error(
+						"Error occurred while trying to sync project - ",
+						error
+					);
+				}
+
 				return false;
 			}
 		} catch (error) {
