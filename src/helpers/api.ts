@@ -6,7 +6,7 @@ class Api {
 	apiBaseUrl: string;
 
 	constructor(markbaseUserToken: string) {
-		this.apiBaseUrl = "https://api.markbase.xyz";
+		this.apiBaseUrl = "http://localhost:8000";
 		this.markbaseUserToken = markbaseUserToken;
 
 		const headers: AxiosRequestHeaders = {

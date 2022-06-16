@@ -1,60 +1,92 @@
 import MarkbasePlugin from "main";
 import { App, FileSystemAdapter, Notice } from "obsidian";
+import { clearInterval, setInterval } from "timers";
 import { Project } from "./types";
 import { zipDirectory } from "./zip";
 
-export const syncAllMarkbaseProjects = async (
-	app: App,
-	plugin: MarkbasePlugin
-) => {
-	if (plugin.tokenValid) {
-		new Notice("Syncing all Markbase projects - please wait");
-		// Get projects
-		const projects = await plugin.apiClient.listProjectsForUser();
-		if (projects.data.projects) {
-			// Sync all projects
-			for (const project of projects.data.projects) {
-				await syncMarkbaseProject(app, plugin, project);
-			}
+export class SyncManager {
+	app: App;
+	plugin: MarkbasePlugin;
+	autoSync: boolean;
+	autoSyncIntervalTimer: NodeJS.Timer;
+
+	constructor(app: App, plugin: MarkbasePlugin, autoSync: boolean) {
+		this.app = app;
+		this.plugin = plugin;
+
+		if (autoSync) {
+			this.startAutoSyncProjects();
 		}
-		new Notice("Successfully synced all Markbase projects!");
-	} else {
-		new Notice("Markbase Token Invalid - unable to fetch/create projects");
-	}
-};
-
-export const syncMarkbaseProject = async (
-	app: App,
-	plugin: MarkbasePlugin,
-	project: Project
-) => {
-	// Re sync the project - i.e. reupload files and push changes to github
-	// Get files and zip them
-	let basePath = "";
-	if (app.vault.adapter instanceof FileSystemAdapter) {
-		basePath = app.vault.adapter.getBasePath();
 	}
 
-	try {
-		const zipBuffer = await zipDirectory(
-			basePath + "/" + project.folderToShare
+	startAutoSyncProjects(intervalMs?: number) {
+		this.autoSyncIntervalTimer = setInterval(
+			() => this.syncAllMarkbaseProjects(),
+			intervalMs ?? 5 * 60 * 1000
 		);
-		try {
-			await plugin.apiClient.syncProjectForUser(project.slug, zipBuffer);
+	}
 
-			return true;
+	stopAutoSyncProjects() {
+		clearInterval(this.autoSyncIntervalTimer);
+	}
+
+	async syncAllMarkbaseProjects() {
+		if (this.plugin.tokenValid) {
+			new Notice("Syncing all Markbase projects...");
+			// Get projects
+			const projects = await this.plugin.apiClient.listProjectsForUser();
+			if (projects.data.projects) {
+				// Sync all projects
+				for (const project of projects.data.projects) {
+					await this.syncMarkbaseProject(project);
+				}
+			}
+			new Notice("Finished syncing all Markbase projects!");
+		} else {
+			new Notice(
+				"Markbase Token Invalid - unable to fetch/create projects"
+			);
+		}
+	}
+
+	async syncMarkbaseProject(project: Project) {
+		// Re sync the project - i.e. reupload files and push changes to github
+		// Get files and zip them
+		let basePath = "";
+		if (this.app.vault.adapter instanceof FileSystemAdapter) {
+			basePath = this.app.vault.adapter.getBasePath();
+		}
+
+		try {
+			const zipBuffer = await zipDirectory(
+				basePath + "/" + project.folderToShare
+			);
+			try {
+				await this.plugin.apiClient.syncProjectForUser(
+					project.slug,
+					zipBuffer
+				);
+
+				return true;
+			} catch (error) {
+				new Notice(
+					`Failed to sync project ${project.slug} - check the console for errors`
+				);
+				console.error(
+					"Error occurred while trying to sync project - ",
+					error
+				);
+				return false;
+			}
 		} catch (error) {
+			new Notice(
+				`Failed to sync project ${project.slug} - error zipping files`
+			);
 			console.error(
-				"Error occurred while trying to sync project - ",
+				"Error occurred while trying to zip files to sync the project - ",
 				error
 			);
 			return false;
 		}
-	} catch (error) {
-		console.error(
-			"Error occurred while trying to zip files to sync the project - ",
-			error
-		);
-		return false;
 	}
-};
+}

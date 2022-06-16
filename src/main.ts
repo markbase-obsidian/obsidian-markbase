@@ -1,35 +1,38 @@
 import { CreateProjectModal } from "components/createProjectModal";
 import { CustomModal } from "components/customModal";
 import { DeleteProjectModal } from "components/deleteProjectModal";
+import { shell } from "electron";
 import Api from "helpers/api";
 import { displayErrorModal } from "helpers/modals";
+import { SyncManager } from "helpers/sync";
 import { Project } from "helpers/types";
-import { zipDirectory } from "helpers/zip";
 import {
 	App,
 	debounce,
-	FileSystemAdapter,
 	Notice,
 	Plugin,
 	PluginSettingTab,
 	Setting,
 } from "obsidian";
-import { shell } from "electron";
-import { syncAllMarkbaseProjects, syncMarkbaseProject } from "helpers/sync";
 
 interface MarkbasePluginSettings {
 	markbaseUserToken: string;
+	autoSync: boolean;
 }
 
 const DEFAULT_SETTINGS: MarkbasePluginSettings = {
 	markbaseUserToken: "",
+	autoSync: false,
 };
 
 export default class MarkbasePlugin extends Plugin {
 	settings: MarkbasePluginSettings;
+	mounted: boolean = false;
 	tokenValid: boolean;
+	userSubscribed: boolean;
 	apiClient: Api;
 	projects: Project[] = [];
+	syncManager: SyncManager;
 
 	async onload() {
 		console.info("Loading Markbase Sync for Obsidian plugin");
@@ -44,7 +47,7 @@ export default class MarkbasePlugin extends Plugin {
 			"Sync all Markbase projects",
 			(evt: MouseEvent) => {
 				// Called when the user clicks the icon.
-				syncAllMarkbaseProjects(this.app, this);
+				this.syncManager.syncAllMarkbaseProjects();
 			}
 		);
 
@@ -53,7 +56,7 @@ export default class MarkbasePlugin extends Plugin {
 			id: "sync-all-markbase-projects-command",
 			name: "Sync all Markbase projects",
 			callback: () => {
-				syncAllMarkbaseProjects(this.app, this);
+				this.syncManager.syncAllMarkbaseProjects();
 			},
 		});
 
@@ -63,18 +66,33 @@ export default class MarkbasePlugin extends Plugin {
 	}
 
 	async initializeProjects(settingsTab: MarkbaseSettingTab) {
-		// Verify token
-		await this.verifyToken(settingsTab);
-		if (this.tokenValid) {
-			// Get projects
-			const projects = await this.apiClient.listProjectsForUser();
-			if (projects.data.projects) {
-				this.projects = projects.data.projects;
+		if (!this.mounted) {
+			try {
+				// Verify token
+				await this.verifyToken(settingsTab);
+				if (this.tokenValid) {
+					// Get projects
+					const projects = await this.apiClient.listProjectsForUser();
+					if (projects.data.projects) {
+						this.projects = projects.data.projects;
+					}
+
+					this.syncManager = new SyncManager(
+						this.app,
+						this,
+						this.settings.autoSync
+					);
+
+					this.syncManager.syncAllMarkbaseProjects();
+				} else {
+					new Notice(
+						"Markbase Token Invalid - unable to fetch/create projects"
+					);
+				}
+				this.mounted = true;
+			} catch (error) {
+				this.mounted = true;
 			}
-		} else {
-			new Notice(
-				"Markbase Token Invalid - unable to fetch/create projects"
-			);
 		}
 	}
 
@@ -113,8 +131,14 @@ export default class MarkbasePlugin extends Plugin {
 			);
 			const verifiedResult = await this.apiClient.verifyObsidianToken();
 			this.tokenValid = verifiedResult.data.verified;
+			try {
+				this.userSubscribed = verifiedResult.data.subscribed;
+			} catch (error) {
+				this.userSubscribed = false;
+			}
 		} catch (error) {
 			this.tokenValid = false;
+			this.userSubscribed = false;
 		}
 
 		this.saveSettings();
@@ -205,6 +229,17 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 						).open();
 					});
 				});
+
+			if (this.plugin.userSubscribed) {
+				settingsContainer.createEl("h3", { text: "Preferences" });
+				settingsContainer.createDiv({
+					attr: {
+						id: "preferencesContainer",
+					},
+				});
+
+				this.loadPreferences();
+			}
 		} else {
 			settingsContainer.createEl("p", {
 				text: "Invalid token - please enter the right token to list, resync and create projects",
@@ -276,11 +311,10 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 
 							// Re sync the project - i.e. reupload files and push changes to github
 							try {
-								const synced = await syncMarkbaseProject(
-									this.app,
-									this.plugin,
-									project
-								);
+								const synced =
+									await this.plugin.syncManager.syncMarkbaseProject(
+										project
+									);
 
 								if (synced) {
 									new CustomModal(
@@ -323,5 +357,38 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 				text: "No projects to display. You can create a project using the button below",
 			});
 		}
+	}
+
+	async loadPreferences(): Promise<void> {
+		const { containerEl } = this;
+
+		const preferencesContainer = containerEl.querySelector(
+			"#preferencesContainer"
+		) as HTMLElement;
+		preferencesContainer.empty();
+
+		new Setting(preferencesContainer)
+			.setName("Auto-sync")
+			.setDesc(
+				"Auto sync your projects every 5 minutes so you don't have to manually sync projects every time they update"
+			)
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.autoSync);
+				toggle.onChange((value) => {
+					this.plugin.settings.autoSync = value;
+					this.plugin.saveSettings();
+					if (value) {
+						new Notice(
+							"Markbase will automatically sync your projects every 5 minutes"
+						);
+						this.plugin.syncManager.startAutoSyncProjects();
+					} else {
+						new Notice(
+							"Markbase will stop syncing your projects every 5 minutes"
+						);
+						this.plugin.syncManager.stopAutoSyncProjects();
+					}
+				});
+			});
 	}
 }
