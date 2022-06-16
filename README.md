@@ -26,6 +26,9 @@ To report bugs or request help using the plugin, please [create an issue](https:
 
 ## Changelog
 
+- 0.0.8
+  - Auto-sync every 5 minutes (for subscribers)
+  - Fix bug where no error message was displayed on large deployments
 - 0.0.7
   - Add command and ribbon button to sync all projects without having to go to Settings every time
 - 0.0.6
