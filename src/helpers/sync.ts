@@ -20,10 +20,14 @@ export class SyncManager {
 	}
 
 	startAutoSyncProjects(intervalMs?: number) {
-		this.autoSyncIntervalTimer = setInterval(
-			() => this.syncAllMarkbaseProjects(),
-			intervalMs ?? 5 * 60 * 1000
-		);
+		if (this.plugin.tokenValid) {
+			this.autoSyncIntervalTimer = setInterval(
+				() => this.syncAllMarkbaseProjects(),
+				intervalMs ?? 5 * 60 * 1000
+			);
+		} else {
+			new Notice("Markbase Token Invalid - unable to auto-sync", 5000);
+		}
 	}
 
 	stopAutoSyncProjects() {
