@@ -29,6 +29,9 @@ To report bugs or request help using the plugin, please [create an issue](https:
 
 ## Changelog
 
+- 0.1.0
+  - Only auto-sync if token is valid
+  - Increase error notice times
 - 0.0.9
   - Restrict creating/syncing to once every hour (for free members) and once every  minute (for paid members)
   - The above was because the server was getting overwhelmed with people spamming the create/sync buttons
