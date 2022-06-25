@@ -74,11 +74,13 @@ export class SyncManager {
 					error.response.status === 429
 				) {
 					new Notice(
-						`Failed to sync project ${project.slug} - can only sync a project once per hour (free) or minute (premium)`
+						`Failed to sync project ${project.slug} - can only sync a project once per hour (free) or minute (premium)`,
+						5000
 					);
 				} else {
 					new Notice(
-						`Failed to sync project ${project.slug} - check the console for errors`
+						`Failed to sync project ${project.slug} - check the console for errors`,
+						5000
 					);
 					console.error(
 						"Error occurred while trying to sync project - ",
@@ -90,7 +92,8 @@ export class SyncManager {
 			}
 		} catch (error) {
 			new Notice(
-				`Failed to sync project ${project.slug} - error zipping files`
+				`Failed to sync project ${project.slug} - error zipping files`,
+				5000
 			);
 			console.error(
 				"Error occurred while trying to zip files to sync the project - ",
