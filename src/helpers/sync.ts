@@ -1,37 +1,15 @@
 import MarkbasePlugin from "main";
 import { App, FileSystemAdapter, Notice } from "obsidian";
-import { clearInterval, setInterval } from "timers";
 import { Project } from "./types";
 import { zipDirectory } from "./zip";
 
 export class SyncManager {
 	app: App;
 	plugin: MarkbasePlugin;
-	autoSync: boolean;
-	autoSyncIntervalTimer: NodeJS.Timer;
 
-	constructor(app: App, plugin: MarkbasePlugin, autoSync: boolean) {
+	constructor(app: App, plugin: MarkbasePlugin) {
 		this.app = app;
 		this.plugin = plugin;
-
-		if (autoSync) {
-			this.startAutoSyncProjects();
-		}
-	}
-
-	startAutoSyncProjects(intervalMs?: number) {
-		if (this.plugin.tokenValid) {
-			this.autoSyncIntervalTimer = setInterval(
-				() => this.syncAllMarkbaseProjects(),
-				intervalMs ?? 5 * 60 * 1000
-			);
-		} else {
-			new Notice("Markbase Token Invalid - unable to auto-sync", 5000);
-		}
-	}
-
-	stopAutoSyncProjects() {
-		clearInterval(this.autoSyncIntervalTimer);
 	}
 
 	async syncAllMarkbaseProjects() {

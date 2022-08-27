@@ -17,12 +17,10 @@ import {
 
 interface MarkbasePluginSettings {
 	markbaseUserToken: string;
-	autoSync: boolean;
 }
 
 const DEFAULT_SETTINGS: MarkbasePluginSettings = {
 	markbaseUserToken: "",
-	autoSync: false,
 };
 
 export default class MarkbasePlugin extends Plugin {
@@ -68,11 +66,7 @@ export default class MarkbasePlugin extends Plugin {
 	async initializeProjects(settingsTab: MarkbaseSettingTab) {
 		if (!this.mounted) {
 			try {
-				this.syncManager = new SyncManager(
-					this.app,
-					this,
-					this.settings.autoSync
-				);
+				this.syncManager = new SyncManager(this.app, this);
 				// Verify token
 				await this.verifyToken(settingsTab);
 				if (this.tokenValid) {
@@ -378,29 +372,5 @@ export class MarkbaseSettingTab extends PluginSettingTab {
 			"#preferencesContainer"
 		) as HTMLElement;
 		preferencesContainer.empty();
-
-		new Setting(preferencesContainer)
-			.setName("Auto-sync")
-			.setDesc(
-				"Auto sync your projects every 5 minutes so you don't have to manually sync projects every time they update"
-			)
-			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.autoSync);
-				toggle.onChange((value) => {
-					this.plugin.settings.autoSync = value;
-					this.plugin.saveSettings();
-					if (value) {
-						new Notice(
-							"Markbase will automatically sync your projects every 5 minutes"
-						);
-						this.plugin.syncManager.startAutoSyncProjects();
-					} else {
-						new Notice(
-							"Markbase will stop syncing your projects every 5 minutes"
-						);
-						this.plugin.syncManager.stopAutoSyncProjects();
-					}
-				});
-			});
 	}
 }
