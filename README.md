@@ -29,6 +29,8 @@ To report bugs or request help using the plugin, please [create an issue](https:
 
 ## Changelog
 
+- 0.1.2
+  - Temporarily change API URL
 - 0.1.1
   - Remove auto-sync (due to server overload)
 - 0.1.0
