@@ -29,6 +29,8 @@ To report bugs or request help using the plugin, please [create an issue](https:
 
 ## Changelog
 
+- 0.1.3
+  - Revert API URL to original
 - 0.1.2
   - Temporarily change API URL
 - 0.1.1
