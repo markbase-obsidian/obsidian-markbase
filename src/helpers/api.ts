@@ -37,7 +37,7 @@ class Api {
 
 		this.client = axios.create({
 			baseURL: this.apiBaseUrl,
-			timeout: 60000,
+			timeout: 300000,
 			headers: headers,
 		});
 
